@@ -1,13 +1,10 @@
-# Save this file in GitHub as:
-# .github/workflows/build-appmint-from-zip.yml
-# Upload AppMint_GitHub_APK_Project.zip to the repository root.
 
 name: Build AppMint APK from ZIP
 
 on:
   push:
     paths:
-      - 'AppMint_GitHub_APK_Project.zip'
+      - 'appmint-v1-3-source.zip'
       - '.github/workflows/build-appmint-from-zip.yml'
   workflow_dispatch:
 
@@ -26,13 +23,17 @@ jobs:
 
       - name: Verify uploaded project archive
         run: |
-          test -f AppMint_GitHub_APK_Project.zip
-          unzip -t AppMint_GitHub_APK_Project.zip
+          test -f appmint-v1-3-source.zip
+          unzip -t appmint-v1-3-source.zip
 
       - name: Extract Android project ZIP
         run: |
           mkdir -p build-source
-          unzip -q AppMint_GitHub_APK_Project.zip -d build-source
+          unzip -q appmint-v1-3-source.zip -d build-source
+
+          echo "Project files:"
+          find build-source -maxdepth 3 -type f | head -100
+
           test -f build-source/settings.gradle.kts
           test -f build-source/app/build.gradle.kts
 
@@ -47,7 +48,7 @@ jobs:
         with:
           packages: 'platform-tools'
 
-      - name: Install required Android SDK packages
+      - name: Install Android SDK packages
         run: |
           sdkmanager --install \
             "platforms;android-35" \
@@ -58,15 +59,10 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Restore stable debug signing key
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: appmint-debug-signing-key-v1
-
       - name: Build debug APK
         working-directory: build-source
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: |
+          gradle --no-daemon --stacktrace :app:assembleDebug
 
       - name: Verify APK
         run: |
